@@ -24,8 +24,9 @@ uv run adk deploy cloud_run \
 gcloud run deploy paper-to-deck \
   --source . \
   --region "$GOOGLE_CLOUD_LOCATION" \
-  --allow-unauthenticated \
-  --set-env-vars GEMINI_MODEL=gemini-1.5-flash
+  --no-allow-unauthenticated \
+  --set-env-vars GEMINI_MODEL=gemini-1.5-flash \
+  --set-secrets=GOOGLE_API_KEY=google-api-key:latest
 ```
 
 ## Verify
