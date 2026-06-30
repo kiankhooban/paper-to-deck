@@ -38,3 +38,34 @@ def test_appendix_slides_marked_hidden():
     html = render_deck(outline)
     assert 'data-visibility="hidden"' in html
     assert "Deep Math" in html
+
+
+def test_render_uses_custom_theme_not_default():
+    html = render_deck(DeckOutline(title="My Paper", slides=[Slide(title="Intro", bullets=["a"])]))
+    # default reveal theme is gone; our design tokens and fonts are present
+    assert "theme/white.css" not in html
+    assert "Fraunces" in html and "Hanken Grotesk" in html
+    assert "#E2552B" in html  # accent token inlined from theme.css
+
+
+def test_render_emits_title_slide():
+    html = render_deck(DeckOutline(title="My Paper", slides=[Slide(title="Intro", bullets=["a"])]))
+    assert 'class="title-slide"' in html
+    assert "My Paper" in html
+
+
+def test_render_loads_mathjax():
+    html = render_deck(DeckOutline(title="T", slides=[Slide(title="Eq", bullets=["x"])]))
+    assert "mathjax" in html.lower()
+
+
+def test_render_emits_appendix_divider():
+    outline = DeckOutline(
+        title="T",
+        slides=[
+            Slide(title="Main", bullets=["a"], section="main"),
+            Slide(title="Proof", bullets=["b"], section="appendix"),
+        ],
+    )
+    html = render_deck(outline)
+    assert 'class="divider-slide"' in html

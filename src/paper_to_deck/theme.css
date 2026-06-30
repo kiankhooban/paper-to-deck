@@ -1,0 +1,41 @@
+/* Editorial-scientific deck theme. Trusted source (authored, not user content). */
+:root {
+  --canvas: #FAF7F2;
+  --ink: #1A1A1A;
+  --accent: #E2552B;
+  --muted: #6B6660;
+  --rule: #D9D2C7;
+}
+.reveal { font-family: "Hanken Grotesk", sans-serif; color: var(--ink); font-size: 30px; }
+.reveal .slides { text-align: left; }
+.reveal .slides section { background: var(--canvas); padding: 6% 8%; }
+.reveal h1, .reveal h2 { font-family: "Fraunces", serif; font-weight: 600; color: var(--ink);
+  letter-spacing: -0.01em; line-height: 1.05; text-transform: none; margin: 0 0 0.6em; }
+.reveal h2 { font-size: 1.9em; padding-bottom: 0.25em; border-bottom: 3px solid var(--accent);
+  display: inline-block; }
+.reveal ul { margin-left: 0.5em; }
+.reveal li { margin: 0.35em 0; line-height: 1.4; }
+.reveal li::marker { color: var(--accent); }
+.reveal figure { margin: 0; }
+.reveal figure img { max-height: 56vh; border: 1px solid var(--rule); background: #fff;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+.reveal figure figcaption { font-family: "JetBrains Mono", monospace; font-size: 0.5em;
+  text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-top: 0.8em; }
+.reveal .two-col { display: grid; grid-template-columns: 1.1fr 1fr; gap: 4%; align-items: center; }
+/* Title slide */
+.reveal .title-slide { display: flex; flex-direction: column; justify-content: center; }
+.reveal .title-slide h1 { font-size: 3em; max-width: 16em; }
+.reveal .title-slide .accent-rule { width: 4em; height: 6px; background: var(--accent);
+  margin: 0.6em 0 1em; }
+.reveal .title-slide .kicker { font-family: "JetBrains Mono", monospace; font-size: 0.5em;
+  text-transform: uppercase; letter-spacing: 0.18em; color: var(--accent); }
+/* Section / appendix divider */
+.reveal .divider-slide { background: var(--ink); color: var(--canvas);
+  display: flex; flex-direction: column; justify-content: center; }
+.reveal .divider-slide h2 { color: var(--canvas); border-color: var(--accent); }
+.reveal .divider-slide .numeral { font-family: "Fraunces", serif; font-size: 5em;
+  color: var(--accent); line-height: 1; }
+/* Footer */
+.reveal .deck-footer { position: absolute; bottom: 3%; left: 8%; right: 8%;
+  display: flex; justify-content: space-between; font-family: "JetBrains Mono", monospace;
+  font-size: 0.42em; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
