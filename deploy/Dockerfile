@@ -14,5 +14,5 @@ RUN mkdir -p /tmp/paper_to_deck_sandbox/assets
 
 ENV PORT=8080
 EXPOSE 8080
-# ADK serves the agent API; the agent module is paper_to_deck.agents.pipeline:root_agent
-CMD ["sh", "-c", "adk api_server --host 0.0.0.0 --port ${PORT} src/paper_to_deck/agents"]
+# The FastAPI app runs the pipeline and serves the custom UI
+CMD ["sh", "-c", "uvicorn paper_to_deck.web.app:app --host 0.0.0.0 --port ${PORT}"]
