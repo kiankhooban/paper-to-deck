@@ -10,7 +10,7 @@ from mcp import StdioServerParameters
 
 from .tools import render_deck_tool
 
-MODEL = os.environ.get("GEMINI_MODEL", "gemini-1.5-flash")
+MODEL = os.environ.get("GEMINI_MODEL", "gemini-flash-latest")
 
 
 def _vision_crop_toolset() -> McpToolset:
