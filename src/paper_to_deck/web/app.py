@@ -3,6 +3,9 @@ from __future__ import annotations
 import os
 import uuid
 from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
@@ -56,8 +59,11 @@ async def generate(
         "focus": focus,
         "want_flowcharts": flowcharts,
     }
-    await run_pipeline(str(pdf_path), constraints)
-    return JSONResponse({"deck_url": "/deck"})
+    try:
+        await run_pipeline(str(pdf_path), constraints)
+        return JSONResponse({"deck_url": "/deck"})
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/deck", response_class=HTMLResponse)

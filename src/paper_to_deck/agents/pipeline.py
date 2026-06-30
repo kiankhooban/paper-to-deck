@@ -13,12 +13,19 @@ from .tools import render_deck_tool
 MODEL = os.environ.get("GEMINI_MODEL", "gemini-flash-latest")
 
 
+import sys
+from pathlib import Path
+
 def _vision_crop_toolset() -> McpToolset:
+    src_path = str(Path(__file__).parent.parent.parent)
     return McpToolset(
         connection_params=StdioConnectionParams(
             server_params=StdioServerParameters(
-                command="python",
-                args=["-m", "paper_to_deck.mcp_server"],
+                command=sys.executable,
+                args=[
+                    "-c",
+                    f"import sys; sys.path.insert(0, {repr(src_path)}); import runpy; runpy.run_module('paper_to_deck.mcp_server', run_name='__main__')"
+                ],
             )
         ),
         tool_filter=["parse_paper"],

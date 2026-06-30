@@ -19,12 +19,12 @@ async def run_pipeline(pdf_path: str, constraints: dict) -> str:
     session_service = InMemorySessionService()
     runner = Runner(agent=agent, app_name="paper_to_deck", session_service=session_service)
     await session_service.create_session(app_name="paper_to_deck", user_id="web", session_id="web")
+    import json
+    constraints_json = json.dumps(constraints)
     message = (
-        f"Constraints are already decided: minutes={constraints['minutes']}, "
-        f"audience={constraints['audience']}, focus={constraints['focus']}, "
-        f"want_flowcharts={constraints['want_flowcharts']}. Do not ask me anything. "
-        f"Call parse_paper with this exact pdf_path: {pdf_path}. "
-        f"Then build and render the full deck."
+        f"Constraints are already decided:\n{constraints_json}\n\n"
+        "You MUST output exactly this JSON object. Do not add any text before or after.\n"
+        f"Also note for the next agent: the user-provided pdf_path is {pdf_path}"
     )
     content = Content(parts=[Part(text=message)])
     async for _event in runner.run_async(user_id="web", session_id="web", new_message=content):
