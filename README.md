@@ -41,7 +41,7 @@ flowchart TD
   API -->|serves /deck and /assets| DECK
 ```
 
-The FastAPI backend routes the sanitized PDF and constraints to the ADK `SequentialAgent`. State flows cleanly downstream from agent to agent, tapping into a low-level MCP server for vision tasks before culminating in a secure, deterministic HTML rendering phase.
+The FastAPI backend routes the sanitized PDF and constraints to the ADK `SequentialAgent`. It also features an **Auto-Estimate** endpoint that pre-analyzes the PDF to recommend the ideal presentation length, slide count, and target audience before the full generation pipeline even begins. State flows cleanly downstream from agent to agent, tapping into a low-level MCP server for vision tasks before culminating in a secure, deterministic HTML rendering phase.
 
 ## The Agent Pipeline
 
