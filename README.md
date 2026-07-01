@@ -1,17 +1,21 @@
 # Paper-to-Deck Architect
 
 > Built for the Kaggle 5-Day AI Agents (Vibe Coding) Capstone.
-> Example deck generated from an open-access arXiv paper (citation placeholder).
+> Example deck generated from an open-access CC-BY paper: Hollenstein et al., "The ZuCo Benchmark on Cross-Subject Reading Task Classification with EEG and Eye-Tracking Data," Frontiers in Psychology 13:1028824 (2023).
 
 **Paper-to-Deck Architect instantly transforms dense research PDFs into beautifully formatted, perfectly paced interactive presentation decks for any time constraint, built for all researchers and students drowning in papers.**
 
-![demo](docs/demo.gif)
+**The upload page**
 
-<div style="display: flex; justify-content: space-between; gap: 10px;">
-  <img src="docs/screenshot-upload.png" alt="Upload Interface" width="32%"/>
-  <img src="docs/screenshot-deck.png" alt="Main Deck" width="32%"/>
-  <img src="docs/screenshot-cloudrun.png" alt="Deployed on Google Cloud Run" width="32%"/>
-</div>
+<img src="docs/screenshot-upload.png" alt="Upload interface" width="100%"/>
+
+**A generated slide, with a figure auto-matched from the paper**
+
+<img src="docs/screenshot-deck.png" alt="Generated deck slide" width="100%"/>
+
+**Deployed on Google Cloud Run**
+
+<img src="docs/screenshot-cloudrun.png" alt="Cloud Run service" width="100%"/>
 
 ## The Problem
 
