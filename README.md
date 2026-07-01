@@ -3,7 +3,7 @@
 > Built for the Kaggle 5-Day AI Agents Capstone. 
 > Example deck generated from an open-access arXiv paper (citation placeholder).
 
-**Paper-to-Deck Architect instantly transforms dense, 20-page ML and academic research PDFs into beautifully formatted, 15-minute interactive presentation decks for MS/PhD students drowning in papers.**
+**Paper-to-Deck Architect instantly transforms dense, 20-page academic research PDFs into beautifully formatted, 15-minute interactive presentation decks for MS/PhD students drowning in papers.**
 
 ![demo](docs/demo.gif)
 
