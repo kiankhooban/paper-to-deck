@@ -3,7 +3,7 @@
 > Built for the Kaggle 5-Day AI Agents (Vibe Coding) Capstone.
 > Example deck generated from an open-access arXiv paper (citation placeholder).
 
-**Paper-to-Deck Architect instantly transforms dense, 20-page ML and academic research PDFs into beautifully formatted, 15-minute interactive presentation decks for MS/PhD students drowning in papers.**
+**Paper-to-Deck Architect instantly transforms dense research PDFs into beautifully formatted, perfectly paced interactive presentation decks for any time constraint, built for all researchers and students drowning in papers.**
 
 ![demo](docs/demo.gif)
 
@@ -15,7 +15,7 @@
 
 ## The Problem
 
-Turning a dense, highly technical academic paper into a 15-minute presentation is an arduous, multi-hour process. It requires reading deep derivations, manually snipping figures and tables, restructuring complex arguments into digestible bullet points, and laboriously formatting slides. Students and researchers need a system that does the heavy lifting, respects their exact time constraints, and doesn't hallucinate layout or content.
+Turning a dense, highly technical academic paper into a custom-length presentation is an arduous, multi-hour process. It requires reading deep derivations, manually snipping figures and tables, restructuring complex arguments into digestible bullet points, and laboriously formatting slides. Students and researchers need a system that does the heavy lifting, respects their exact time constraints, and doesn't hallucinate layout or content.
 
 ## Why Agents (not one prompt)
 
