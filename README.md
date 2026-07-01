@@ -3,7 +3,7 @@
 > Built for the Kaggle 5-Day AI Agents Capstone. 
 > Example deck generated from an open-access arXiv paper (citation placeholder).
 
-**Paper-to-Deck Architect instantly transforms dense, 20-page academic research PDFs into beautifully formatted, 15-minute interactive presentation decks for MS/PhD students drowning in papers.**
+**Paper-to-Deck Architect instantly transforms dense, 20-page academic research PDFs into beautifully formatted, time-boxed interactive presentation decks for MS/PhD students drowning in papers. You set the talk length (default 15 minutes) and the deck sizes itself to fit.**
 
 ![demo](docs/demo.gif)
 
@@ -15,7 +15,7 @@
 
 ## The Problem
 
-Turning a dense, highly technical academic paper into a 15-minute presentation is an arduous, multi-hour process. It requires reading deep derivations, manually snipping figures and tables, restructuring complex arguments into digestible bullet points, and laboriously formatting slides. Existing LLM wrappers often fail at this because they lack the ability to physically extract visual elements from the PDF, hallucinate UI code, and struggle to condense content without losing the deep math required for Q&A sessions.
+Turning a dense, highly technical academic paper into a talk-ready presentation is an arduous, multi-hour process. It requires reading deep derivations, manually snipping figures and tables, restructuring complex arguments into digestible bullet points, and laboriously formatting slides. Existing LLM wrappers often fail at this because they lack the ability to physically extract visual elements from the PDF, hallucinate UI code, and struggle to condense content without losing the deep math required for Q&A sessions.
 
 ## How It Works
 
@@ -35,7 +35,7 @@ flowchart TD
 1. **Upload & Sandbox:** The FastAPI backend securely receives the PDF, validating its `%PDF` magic bytes and enforcing a strict 25MB cap. The file is saved to an isolated, sandboxed path to prevent traversal attacks.
 2. **Vision & Crop (MCP Server):** An internal Model Context Protocol (MCP) server runs PyMuPDF to extract raw text and actively crop bounding boxes around figures and tables, saving them to a sandboxed `/assets` folder. It associates captions with images using a `caption-regex` paired with a "nearest-region-above" heuristic—it identifies the caption text block and calculates the distance to the bottom of all image rects above it, snapping the crop to the nearest visual asset.
 3. **Concierge Agent:** Interviews the user (or parses form inputs) to establish presentation constraints, including talk duration, target audience, and the core focus of the talk.
-4. **Distiller Agent:** Restructures the paper into a strict outline. To fit a 15-minute time budget, it produces exactly 10 main slides. All heavy mathematical derivations, secondary results, and deep proofs are dynamically routed into a 20-slide "Hidden Appendix" that stays out of the linear flow but remains accessible during Q&A.
+4. **Distiller Agent:** Restructures the paper into a strict outline. It produces exactly the number of main slides that fit the requested talk length (roughly one slide per 1–1.5 minutes, estimated from paper density and audience). All heavy mathematical derivations, secondary results, and deep proofs are dynamically routed into a "Hidden Appendix" (up to 20 slides) that stays out of the linear flow but remains accessible during Q&A.
 5. **Visual Matcher Agent:** Reviews the generated slide outline and the MCP server's figure manifest, intelligently mapping the perfectly cropped assets to their corresponding slides.
 6. **Frontend Coder Agent:** The agent does *not* freehand HTML, which is a massive XSS and hallucination risk. Instead, it calls a deterministic, sanitizing `render_deck` tool that outputs the final, flawless Reveal.js presentation.
 

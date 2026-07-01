@@ -41,9 +41,9 @@ def test_appendix_slides_marked_hidden():
 
 
 def test_render_uses_custom_theme_not_default():
-    html = render_deck(DeckOutline(title="My Paper", slides=[Slide(title="Intro", bullets=["a"])]))
+    html = render_deck(DeckOutline(title="My Paper", slides=[Slide(title="Intro", bullets=["a"])], theme="black"))
     # default reveal theme is gone; our design tokens and fonts are present
-    assert "theme/white.css" not in html
+    assert "theme/black.css" in html
     assert "Fraunces" in html and "Hanken Grotesk" in html
     assert "#E2552B" in html  # accent token inlined from theme.css
 
@@ -54,9 +54,9 @@ def test_render_emits_title_slide():
     assert "My Paper" in html
 
 
-def test_render_loads_mathjax():
+def test_render_excludes_mathjax():
     html = render_deck(DeckOutline(title="T", slides=[Slide(title="Eq", bullets=["x"])]))
-    assert "mathjax" in html.lower()
+    assert "mathjax" not in html.lower()
 
 
 def test_render_emits_appendix_divider():
