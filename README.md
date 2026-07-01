@@ -13,10 +13,6 @@
 
 <img src="docs/screenshot-deck.png" alt="Generated deck slide" width="100%"/>
 
-**Deployed on Google Cloud Run**
-
-<img src="docs/screenshot-cloudrun.png" alt="Cloud Run service" width="100%"/>
-
 ## The Problem
 
 Turning a dense, highly technical academic paper into a custom-length presentation is an arduous, multi-hour process. It requires reading deep derivations, manually snipping figures and tables, restructuring complex arguments into digestible bullet points, and laboriously formatting slides. Students and researchers need a system that does the heavy lifting, respects their exact time constraints, and doesn't hallucinate layout or content.
