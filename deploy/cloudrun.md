@@ -1,42 +1,37 @@
 # Deploying Paper-to-Deck Architect to Cloud Run
 
 ## Prerequisites
-- `gcloud` authenticated: `gcloud auth login` and `gcloud auth application-default login`
-- A GCP project with Cloud Run + Cloud Build + Vertex AI APIs enabled
-- Auth is **Vertex AI + ADC**. There is NO api key and no Secret Manager secret for one.
+- `gcloud` CLI installed and authenticated:
+  ```bash
+  gcloud auth login
+  gcloud auth application-default login
+  ```
+- A Google Cloud project with the **Cloud Run**, **Cloud Build**, and **Vertex AI** APIs enabled.
+- Authentication is strictly **Vertex AI + Application Default Credentials (ADC)**. There are NO API keys and NO Secret Manager secrets used.
 
-## Deploy with the ADK CLI (authenticated only)
+## Deploying the Service
+Execute the following command from the root of the repository to build and deploy the container. 
+The `--no-allow-unauthenticated` flag is strictly required to prevent runaway billing from public internet access.
+
 ```bash
-export GOOGLE_CLOUD_PROJECT=your-project-id
-export GOOGLE_CLOUD_LOCATION=us-central1
-
-uv run adk deploy cloud_run \
-  --project "$GOOGLE_CLOUD_PROJECT" \
-  --region "$GOOGLE_CLOUD_LOCATION" \
-  --service_name paper-to-deck \
-  --app_name paper_to_deck \
-  --with_ui \
-  src/paper_to_deck/agents
-# When prompted "Allow unauthenticated invocations", answer N (no public access).
-```
-
-## Set the runtime env on the service (Vertex, no key)
-```bash
-gcloud run services update paper-to-deck \
-  --region "$GOOGLE_CLOUD_LOCATION" \
+gcloud run deploy paper-to-deck \
+  --source . \
+  --region us-central1 \
+  --project your-project-id \
   --no-allow-unauthenticated \
-  --update-env-vars GOOGLE_GENAI_USE_VERTEXAI=TRUE,GOOGLE_CLOUD_PROJECT="$GOOGLE_CLOUD_PROJECT",GOOGLE_CLOUD_LOCATION="$GOOGLE_CLOUD_LOCATION",GEMINI_MODEL=gemini-2.5-flash
+  --set-env-vars GOOGLE_GENAI_USE_VERTEXAI=TRUE,GOOGLE_CLOUD_PROJECT=your-project-id,GOOGLE_CLOUD_LOCATION=us-central1,GEMINI_MODEL=gemini-2.5-flash
 ```
 
-## Least privilege
-Grant the service's runtime service account only `roles/aiplatform.user`. Do not use a key, do not grant owner.
+## Least Privilege
+Ensure that the runtime service account assigned to this Cloud Run service is granted **only** the `roles/aiplatform.user` IAM role. Do not use API keys and do not grant Owner/Editor roles.
 
-## Verify
-- The service must require auth: an unauthenticated curl returns 403. Reach it as yourself with an identity token.
-- Confirm assets land in the container `/tmp/paper_to_deck_sandbox/assets`.
-- Cloud Run filesystem is ephemeral. For persistent decks, upload deck.html to a GCS bucket in a later iteration.
+## Verify Deployment
+- **Security Check:** Try visiting the service URL in an incognito window. An unauthenticated request must return a `403 Forbidden` error.
+- **Accessing the Service:** To reach the service securely, append an identity token to your request, or use the Google Cloud Console's Cloud Run testing proxy.
 
-## Post-demo teardown
+## Post-Demo Teardown
+To immediately stop any potential billing after your presentation or testing, delete the service:
+
 ```bash
-gcloud run services delete paper-to-deck --region "$GOOGLE_CLOUD_LOCATION"
+gcloud run services delete paper-to-deck --region us-central1 --project your-project-id
 ```

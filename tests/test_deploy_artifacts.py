@@ -9,5 +9,5 @@ def test_dockerfile_exists_and_sets_sandbox():
 
 def test_cloudrun_doc_has_deploy_command():
     content = Path("deploy/cloudrun.md").read_text()
-    assert "adk deploy cloud_run" in content
+    assert "gcloud run deploy" in content
     assert "--project" in content and "--region" in content
