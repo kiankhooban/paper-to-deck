@@ -30,6 +30,8 @@ class Slide(BaseModel):
 
 class DeckOutline(BaseModel):
     title: str
+    theme: Literal["white", "black", "league", "sky", "serif", "simple"] = "white"
+    font: Literal["default", "sans-serif", "serif", "monospace"] = "default"
     slides: list[Slide]
 
     def main_slides(self) -> list[Slide]:

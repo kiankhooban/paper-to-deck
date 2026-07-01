@@ -35,17 +35,76 @@ def validate_pdf(data: bytes) -> None:
         raise HTTPException(status_code=400, detail="That file is not a PDF.")
 
 
+import json
+import fitz
+from google import genai
+from google.genai import types
+
 @app.get("/", response_class=HTMLResponse)
 def index() -> str:
     return (_STATIC / "index.html").read_text(encoding="utf-8")
+
+@app.post("/estimate")
+async def estimate(
+    pdf: UploadFile = File(...),
+    audience: str = Form(""),
+    focus: str = Form(""),
+) -> JSONResponse:
+    data = await pdf.read()
+    validate_pdf(data)
+    
+    try:
+        doc = fitz.open(stream=data, filetype="pdf")
+        text = ""
+        for i in range(min(3, len(doc))):
+            text += doc[i].get_text()
+        doc.close()
+    except Exception:
+        text = "Could not parse PDF text."
+
+    prompt = f"""You are an expert presentation coach.
+Based on the first few pages of this research paper, the target audience, and the core focus, 
+estimate the optimal talk length (in minutes) and the number of slides needed.
+Audience: {audience or 'General audience'}
+Core focus: {focus or 'General overview'}
+
+Paper text (first 3 pages):
+{text}
+
+Output ONLY a valid JSON object matching this schema:
+{{
+  "minutes": int, // Suggested talk length
+  "slides": int, // Suggested number of main slides (usually 1 slide per 1-1.5 minutes)
+  "audience": str // A refined version of the audience if it was empty
+}}"""
+
+    client = genai.Client()
+    model = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+    
+    try:
+        response = client.models.generate_content(
+            model=model,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+            )
+        )
+        result = json.loads(response.text)
+        return JSONResponse(result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 
 @app.post("/generate")
 async def generate(
     pdf: UploadFile = File(...),
-    minutes: int = Form(15),
+    minutes: str = Form("15"),
+    slides: str = Form("10"),
     audience: str = Form("general technical"),
     focus: str = Form(""),
+    theme: str = Form("white"),
+    font: str = Form("default"),
     flowcharts: bool = Form(False),
 ) -> JSONResponse:
     data = await pdf.read()
@@ -53,14 +112,22 @@ async def generate(
     sandbox = _sandbox()
     pdf_path = safe_join(sandbox, f"upload_{uuid.uuid4().hex}.pdf")
     pdf_path.write_bytes(data)
+    
+    # Use fallback defaults if the user left them entirely empty
     constraints = {
-        "minutes": minutes,
-        "audience": audience,
-        "focus": focus,
+        "minutes": int(minutes) if minutes.strip() else 15,
+        "slides": int(slides) if slides.strip() else 10,
+        "audience": audience.strip() or "general technical",
+        "focus": focus.strip(),
+        "theme": theme,
+        "font": font,
         "want_flowcharts": flowcharts,
     }
     try:
         await run_pipeline(str(pdf_path), constraints)
+        deck_file = sandbox / "deck.html"
+        if not deck_file.exists():
+            raise RuntimeError("Pipeline completed but deck.html was not created. (The LLM may have failed to call the rendering tool.)")
         return JSONResponse({"deck_url": "/deck"})
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

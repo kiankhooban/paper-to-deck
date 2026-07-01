@@ -18,6 +18,14 @@ def render_deck_tool(outline_json: str) -> str:
     root = os.environ.get("PAPER_TO_DECK_SANDBOX")
     if not root:
         return "ERROR: PAPER_TO_DECK_SANDBOX is not set"
+        
+    outline_json = outline_json.strip()
+    # Extract JSON block robustly in case LLM added conversational text or markdown
+    start_idx = outline_json.find("{")
+    end_idx = outline_json.rfind("}")
+    if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
+        outline_json = outline_json[start_idx:end_idx+1]
+        
     try:
         outline = DeckOutline.model_validate_json(outline_json)
     except ValidationError as exc:

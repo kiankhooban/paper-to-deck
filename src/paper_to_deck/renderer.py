@@ -74,6 +74,22 @@ def render_deck(outline: DeckOutline) -> str:
         appendix += "".join(
             _content_slide(s, outline.title, hidden=True) for s in appendix_slides
         )
+        
+    theme_name = escape_text(outline.theme.lower())
+    theme_url = f"{_REVEAL}/theme/{theme_name}.css"
+    
+    font_css = ""
+    font_name = outline.font.lower()
+    if font_name == "serif":
+        font_css = "<style>:root { --r-heading-font: 'Georgia', serif; --r-main-font: 'Times New Roman', serif; } .reveal { font-family: var(--r-main-font) !important; } .reveal h1, .reveal h2, .reveal h3 { font-family: var(--r-heading-font) !important; }</style>"
+    elif font_name == "sans-serif":
+        font_css = "<style>:root { --r-heading-font: 'Impact', sans-serif; --r-main-font: 'Helvetica Neue', Helvetica, Arial, sans-serif; } .reveal { font-family: var(--r-main-font) !important; } .reveal h1, .reveal h2, .reveal h3 { font-family: var(--r-heading-font) !important; }</style>"
+    elif font_name == "monospace":
+        font_css = "<style>:root { --r-heading-font: 'Courier New', monospace; --r-main-font: 'JetBrains Mono', monospace; } .reveal { font-family: var(--r-main-font) !important; } .reveal h1, .reveal h2, .reveal h3 { font-family: var(--r-heading-font) !important; }</style>"
+    else:
+        # Default pairing from home page (Fraunces + Hanken Grotesk)
+        font_css = "<style>:root { --r-heading-font: 'Fraunces', serif; --r-main-font: 'Hanken Grotesk', sans-serif; } .reveal { font-family: var(--r-main-font) !important; } .reveal h1, .reveal h2, .reveal h3 { font-family: var(--r-heading-font) !important; }</style>"
+
     return f"""<!DOCTYPE html>
 <html>
 <head>
@@ -82,12 +98,46 @@ def render_deck(outline: DeckOutline) -> str:
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="stylesheet" href="{_FONTS}"/>
 <link rel="stylesheet" href="{_REVEAL}/reveal.css"/>
+<link rel="stylesheet" href="{theme_url}"/>
 <style>{_THEME_CSS}</style>
+{font_css}
+<style>
+  /* Fix background mismatch: make body inherit the theme's background */
+  body {{ background: var(--r-background-color) !important; }}
+  
+  /* Prevent footer overlap by providing bottom padding to slides */
+  .reveal .slides section {{
+      padding-bottom: 80px !important;
+      height: 100%;
+      box-sizing: border-box;
+  }}
+  .reveal .deck-footer {{
+      position: absolute;
+      bottom: 20px;
+      left: 0;
+      right: 0;
+      width: 100%;
+  }}
+  
+  /* Ensure PDF print styling works perfectly */
+  @media print {{
+      body {{ background: white !important; }}
+      .reveal .slides section {{ page-break-after: always !important; }}
+  }}
+</style>
 </head>
 <body>
 <div class="reveal"><div class="slides">{_title_slide(outline.title)}{main}{appendix}</div></div>
 <script src="{_REVEAL}/reveal.js"></script>
-<script id="MathJax-script" async src="{_MATHJAX}"></script>
-<script>Reveal.initialize({{ transition: "fade", slideNumber: "c/t" }});</script>
+<script>
+  Reveal.initialize({{
+    transition: "fade",
+    slideNumber: "c/t",
+    width: 1280,
+    height: 800,
+    margin: 0.1,
+    pdfSeparateFragments: false
+  }});
+</script>
 </body>
 </html>"""

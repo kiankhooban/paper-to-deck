@@ -26,7 +26,9 @@ def _vision_crop_toolset() -> McpToolset:
                     "-c",
                     f"import sys; sys.path.insert(0, {repr(src_path)}); import runpy; runpy.run_module('paper_to_deck.mcp_server', run_name='__main__')"
                 ],
-            )
+                env=os.environ.copy()
+            ),
+            timeout=600.0
         ),
         tool_filter=["parse_paper"],
     )
@@ -51,10 +53,16 @@ def build_root_agent() -> SequentialAgent:
         instruction=(
             "You read a research paper and write a strict slide outline honoring "
             "{constraints}. Call the parse_paper tool with the user-provided pdf_path to get "
-            "the paper text and figure manifest. Produce EXACTLY 10 main slides and up to 20 "
-            "appendix slides. Move all heavy derivations and secondary results into appendix "
-            "slides (section='appendix'). Output a DeckOutline JSON: "
-            "{title, slides:[{title, bullets, notes, image_id, section}]}. Leave image_id null."
+            "the paper text and figure manifest. Produce EXACTLY the number of main slides specified "
+            "in the 'slides' key of {constraints}. Move all heavy derivations and secondary results "
+            "into appendix slides (section='appendix', up to 20). Output a DeckOutline JSON: "
+            "{title, theme, font, slides:[{title, bullets, notes, image_id, section}]}. "
+            "The 'section' field MUST be exactly \"main\" or \"appendix\" (no other values allowed). "
+            "Set 'theme' and 'font' exactly to the values given in {constraints}. Leave image_id null. "
+            "- Map the flow precisely to the 10+20 structure.\n"
+            "- CRITICAL: DO NOT use markdown formatting (like **stars** for bold or * for italic). Output plain text only.\n"
+            "- CRITICAL: DO NOT use LaTeX formatting for mathematical expressions (e.g. no $ or \\). Use plain unicode math symbols (e.g. E=mc², α, ×, ≤) instead.\n"
+            "- The `section` field MUST be exactly \"main\" or \"appendix\"."
         ),
         tools=[_vision_crop_toolset()],
         output_key="deck_outline",
@@ -68,7 +76,7 @@ def build_root_agent() -> SequentialAgent:
             "parse_paper, decide which figure (by its image_path, e.g. 'assets/fig_1.png') best "
             "supports each slide based on the captions. Set each slide's image_id to that path, "
             "or null if no figure fits. Do not invent paths: only use image_path values from the "
-            "manifest. Output the updated DeckOutline JSON."
+            "manifest. The 'section' field MUST remain exactly \"main\" or \"appendix\". Output the updated DeckOutline JSON."
         ),
         output_key="mapped_outline",
     )

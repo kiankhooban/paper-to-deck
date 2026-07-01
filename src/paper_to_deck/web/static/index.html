@@ -7,7 +7,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Hanken+Grotesk:wght@400;600&family=JetBrains+Mono:wght@500&display=swap"/>
 <style>
-  :root{ --canvas:#FAF7F2; --ink:#1A1A1A; --accent:#E2552B; --muted:#6B6660; --rule:#D9D2C7; }
+  :root{ --canvas:#FAF7F2; --ink:#1A1A1A; --accent:#E2552B; --muted:#6B6660; --rule:#D9D2C7; --card:#FFFFFF; --dropzone:#FFF6F2; }
+  @media (prefers-color-scheme: dark) {
+    :root{ --canvas:#121212; --ink:#E0E0E0; --accent:#FF7043; --muted:#9E9E9E; --rule:#333333; --card:#1E1E1E; --dropzone:#2A201D; }
+  }
   *{ box-sizing:border-box; }
   body{ margin:0; background:var(--canvas); color:var(--ink); font-family:"Hanken Grotesk",sans-serif;
     background-image:radial-gradient(var(--rule) 1px, transparent 1px); background-size:26px 26px; }
@@ -18,11 +21,11 @@
     line-height:1.02; letter-spacing:-.02em; margin:.2em 0 .1em; }
   .sub{ color:var(--muted); font-size:1.15rem; max-width:34ch; }
   .accent-rule{ width:4em; height:6px; background:var(--accent); margin:1.4em 0 2.4em; }
-  .card{ background:#fff; border:1px solid var(--rule); box-shadow:0 18px 50px rgba(0,0,0,.07);
+  .card{ background:var(--card); border:1px solid var(--rule); box-shadow:0 18px 50px rgba(0,0,0,.07);
     padding:34px; }
   .dropzone{ border:2px dashed var(--rule); padding:48px 24px; text-align:center; cursor:pointer;
     transition:border-color .15s, background .15s; }
-  .dropzone.drag{ border-color:var(--accent); background:#FFF6F2; }
+  .dropzone.drag{ border-color:var(--accent); background:var(--dropzone); }
   .dropzone .dz-title{ font-family:"Fraunces",serif; font-size:1.5rem; }
   .dropzone .dz-sub{ color:var(--muted); font-size:.95rem; margin-top:.4em; }
   .filename{ font-family:"JetBrains Mono",monospace; color:var(--accent); margin-top:14px; min-height:1.2em; }
@@ -41,13 +44,28 @@
   .stage{ display:flex; align-items:center; gap:12px; padding:10px 0; color:var(--muted);
     font-family:"JetBrains Mono",monospace; font-size:.85rem; }
   .stage .dot{ width:10px; height:10px; border-radius:50%; background:var(--rule); flex:0 0 auto; }
-  .stage.active{ color:var(--ink); } .stage.active .dot{ background:var(--accent); animation:pulse 1s infinite; }
-  .stage.done .dot{ background:var(--ink); }
+  .stage.active{ color:var(--ink); } 
+  .stage.active .dot{ background:var(--accent); animation:pulse 1s infinite; }
+  .stage.done .dot{ 
+    background-color:#22c55e; 
+    background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>');
+    background-size:7px 7px;
+    background-position:center;
+    background-repeat:no-repeat;
+    animation:none;
+    transform:scale(1.2);
+    transition:transform 0.3s ease, background-color 0.3s ease;
+  }
   @keyframes pulse{ 0%,100%{ transform:scale(1); opacity:1; } 50%{ transform:scale(1.5); opacity:.5; } }
   .result{ display:none; margin-top:26px; }
   .result.on{ display:block; }
   .view{ display:inline-block; padding:16px 28px; background:var(--ink); color:var(--canvas);
     font-family:"Fraunces",serif; font-size:1.2rem; text-decoration:none; }
+  .flash { animation: flashHighlight 1.5s ease-out; }
+  @keyframes flashHighlight {
+    0% { background-color: #dcfce7; border-color: #22c55e; }
+    100% { background-color: var(--canvas); border-color: var(--rule); }
+  }
 </style>
 </head>
 <body>
@@ -67,11 +85,35 @@
       </div>
 
       <div class="grid">
-        <div><label>Talk length (min)</label><input type="number" name="minutes" value="15" min="3" max="60"/></div>
-        <div><label>Audience</label><input type="text" name="audience" value="ML researchers"/></div>
-        <div style="grid-column:1/3"><label>Core focus</label><input type="text" name="focus" placeholder="the one thing the talk must land"/></div>
+        <div><label>Talk length (min)</label><input type="number" id="minutes" name="minutes" placeholder="e.g. 15" min="3" max="60"/></div>
+        <div><label>Slide Count</label><input type="number" id="slides" name="slides" placeholder="e.g. 10" min="1" max="100"/></div>
+        <div><label>Audience</label><input type="text" id="audience" name="audience" placeholder="e.g. ML researchers"/></div>
+        <div><label>Core focus</label><input type="text" id="focus" name="focus" placeholder="e.g. the one thing the talk must land"/></div>
+        
+        <div>
+          <label>Theme</label>
+          <select name="theme" id="theme" style="width:100%; padding:12px 14px; border:1px solid var(--rule); background:var(--canvas); font-family:inherit; font-size:1rem; color:var(--ink);">
+            <option value="white">White (Default)</option>
+            <option value="black">Black</option>
+            <option value="league">League</option>
+            <option value="sky">Sky</option>
+            <option value="serif">Serif</option>
+            <option value="simple">Simple</option>
+          </select>
+        </div>
+        <div>
+          <label>Typography</label>
+          <select name="font" id="font" style="width:100%; padding:12px 14px; border:1px solid var(--rule); background:var(--canvas); font-family:inherit; font-size:1rem; color:var(--ink);">
+            <option value="default">Default</option>
+            <option value="sans-serif">Clean Sans-serif</option>
+            <option value="serif">Academic Serif</option>
+            <option value="monospace">Code Monospace</option>
+          </select>
+        </div>
       </div>
       <div class="toggle"><input type="checkbox" name="flowcharts" id="flowcharts"/><label for="flowcharts" style="margin:0">Generate flowchart visuals</label></div>
+      
+      <button class="btn" id="estimate_btn" type="button" style="background:var(--muted); margin-top:14px; margin-bottom: 0px;">Auto-Estimate (Optional)</button>
 
       <button class="btn" id="go" type="submit">Build the deck</button>
     </form>
@@ -84,7 +126,8 @@
     </div>
 
     <div class="result" id="result">
-      <a class="view" id="view" href="/deck" target="_blank">View your deck &rarr;</a>
+      <a class="view" id="view" href="/deck" target="_blank" style="margin-right: 12px;">View your deck &rarr;</a>
+      <a class="view" id="pdf_export" href="/deck?print-pdf" target="_blank" style="background:var(--muted);">Download as PDF &darr;</a>
     </div>
   </div>
 </div>
@@ -106,11 +149,72 @@
     const els=[...document.querySelectorAll('.stage')]; let i=0;
     els.forEach(e=>e.classList.remove('active','done'));
     stages.classList.add('on');
-    const t=setInterval(()=>{ if(i>0)els[i-1].classList.add('done');
-      if(i<els.length)els[i].classList.add('active'); i++;
-      if(i>els.length)clearInterval(t); }, 1400);
-    return ()=>{ clearInterval(t); els.forEach(e=>e.classList.add('done')); };
+    
+    const t=setInterval(()=>{ 
+      if(i>0) { 
+        els[i-1].classList.remove('active'); 
+        els[i-1].classList.add('done'); 
+      }
+      if(i<els.length) els[i].classList.add('active'); 
+      i++;
+      if(i>els.length) clearInterval(t); 
+    }, 14000);
+    
+    // start first one immediately
+    els[0].classList.add('active'); i++;
+    
+    return ()=>{ 
+      clearInterval(t); 
+      els.forEach(e=> { e.classList.remove('active'); e.classList.add('done'); }); 
+    };
   }
+
+  const estimateBtn = document.getElementById('estimate_btn');
+  estimateBtn.addEventListener('click', async e => {
+    e.preventDefault();
+    if(!input.files[0]){ fn.textContent='Choose a PDF first.'; return; }
+    
+    const originalText = estimateBtn.textContent;
+    estimateBtn.disabled = true;
+    estimateBtn.textContent = 'Estimating...';
+    
+    try {
+      const res = await fetch('/estimate', {method:'POST', body:new FormData(form)});
+      if(!res.ok) throw new Error('Estimation failed');
+      const data = await res.json();
+      
+      const minInput = document.getElementById('minutes');
+      const slidesInput = document.getElementById('slides');
+      const audInput = document.getElementById('audience');
+      
+      minInput.value = data.minutes;
+      slidesInput.value = data.slides;
+      
+      // Trigger a CSS animation to show the user they changed
+      minInput.classList.remove('flash');
+      slidesInput.classList.remove('flash');
+      void minInput.offsetWidth; // trigger reflow
+      minInput.classList.add('flash');
+      slidesInput.classList.add('flash');
+
+      // Also update audience if they didn't provide one and we inferred it (optional)
+      if (!audInput.value && data.audience) {
+        audInput.value = data.audience;
+        audInput.classList.remove('flash');
+        void audInput.offsetWidth;
+        audInput.classList.add('flash');
+      }
+      
+      estimateBtn.textContent = 'Updated!';
+      setTimeout(() => { if(estimateBtn.textContent === 'Updated!') estimateBtn.textContent = originalText; }, 2000);
+      
+    } catch(err) {
+      alert('Error estimating time: ' + err.message);
+      estimateBtn.textContent = originalText;
+    } finally {
+      estimateBtn.disabled = false;
+    }
+  });
 
   form.addEventListener('submit', async e=>{
     e.preventDefault();

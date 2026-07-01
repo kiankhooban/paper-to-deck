@@ -27,6 +27,6 @@ async def run_pipeline(pdf_path: str, constraints: dict) -> str:
         f"Also note for the next agent: the user-provided pdf_path is {pdf_path}"
     )
     content = Content(parts=[Part(text=message)])
-    async for _event in runner.run_async(user_id="web", session_id="web", new_message=content):
-        pass
+    async for event in runner.run_async(user_id="web", session_id="web", new_message=content):
+        print(f"ADK EVENT: {event}", flush=True)
     return f"{os.environ['PAPER_TO_DECK_SANDBOX']}/deck.html"
