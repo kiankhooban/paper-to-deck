@@ -7,7 +7,7 @@
 
 ## Deploy with the ADK CLI (authenticated only)
 ```bash
-export GOOGLE_CLOUD_PROJECT=project-7e8ad372-6939-4d8e-be7
+export GOOGLE_CLOUD_PROJECT=your-project-id
 export GOOGLE_CLOUD_LOCATION=us-central1
 
 uv run adk deploy cloud_run \
