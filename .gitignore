@@ -6,3 +6,5 @@ assets/
 *.egg-info/
 .pytest_cache/
 .DS_Store
+VIDEO_SCRIPT.md
+SUBMISSION_WRITEUP.md
