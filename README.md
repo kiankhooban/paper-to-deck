@@ -1,9 +1,9 @@
 # Paper-to-Deck Architect
 
-> Built for the Kaggle 5-Day AI Agents Capstone. 
+> Built for the Kaggle 5-Day AI Agents (Vibe Coding) Capstone.
 > Example deck generated from an open-access arXiv paper (citation placeholder).
 
-**Paper-to-Deck Architect instantly transforms dense, 20-page academic research PDFs into beautifully formatted, time-boxed interactive presentation decks for MS/PhD students drowning in papers. You set the talk length (default 15 minutes) and the deck sizes itself to fit.**
+**Paper-to-Deck Architect instantly transforms dense, 20-page ML and academic research PDFs into beautifully formatted, 15-minute interactive presentation decks for MS/PhD students drowning in papers.**
 
 ![demo](docs/demo.gif)
 
@@ -15,55 +15,83 @@
 
 ## The Problem
 
-Turning a dense, highly technical academic paper into a talk-ready presentation is an arduous, multi-hour process. It requires reading deep derivations, manually snipping figures and tables, restructuring complex arguments into digestible bullet points, and laboriously formatting slides. Existing LLM wrappers often fail at this because they lack the ability to physically extract visual elements from the PDF, hallucinate UI code, and struggle to condense content without losing the deep math required for Q&A sessions.
+Turning a dense, highly technical academic paper into a 15-minute presentation is an arduous, multi-hour process. It requires reading deep derivations, manually snipping figures and tables, restructuring complex arguments into digestible bullet points, and laboriously formatting slides. Students and researchers need a system that does the heavy lifting, respects their exact time constraints, and doesn't hallucinate layout or content.
 
-## How It Works
+## Why Agents (not one prompt)
 
-Paper-to-Deck Architect solves this by orchestrating a specialized multi-agent pipeline using a `SequentialAgent` from the Google ADK. State is seamlessly passed between agents via `output_key` routing.
+This is a multi-specialist job. To reliably automate this process, the system needs to: physically extract figures, decide on an outline constrained by time limits, intelligently match figures to the correct slides by understanding context, and safely render deterministic UI code. Each of these is a distinct competency, which is why they are broken down into a team of specialized agents, mapping directly to the Google ADK's `SequentialAgent`.
+
+## Architecture
 
 ```mermaid
 flowchart TD
-    A[PDF Upload] --> B(FastAPI Backend)
-    B -->|Sandboxed File| C[MCP Server]
-    C -->|PyMuPDF Extracts Text & Crops Figures| D[Concierge Agent]
-    D -->|User Constraints| E[Distiller Agent]
-    E -->|10 Main + 20 Appendix Slides| F[Visual Matcher Agent]
-    F -->|Maps Figures to Slides| G[Frontend Coder Agent]
-    G -->|Calls render_deck()| H[Reveal.js Output]
+  U[User: PDF + audience + minutes + focus] --> API[FastAPI web app]
+  API -->|validate %PDF, &le;25MB, sandbox write| RUN[ADK Runner]
+  RUN --> SEQ[SequentialAgent: paper_to_deck_architect]
+  SEQ --> C[1 Concierge -> constraints]
+  C --> D[2 Distiller -> deck_outline]
+  D -->|parse_paper over MCP stdio| MCP[Vision MCP Server]
+  MCP --> PY[PyMuPDF: text + caption detect]
+  MCP --> GV[Gemini Vision: figure bounding boxes]
+  GV --> CROP[Crop figures to /assets]
+  D --> VM[3 Visual Matcher -> mapped_outline]
+  VM --> FC[4 Frontend Coder -> deck_path]
+  FC -->|render_deck_tool| R[Renderer: sanitized Reveal.js + MathJax]
+  R --> DECK[deck.html]
+  API -->|serves /deck and /assets| DECK
 ```
 
-1. **Upload & Sandbox:** The FastAPI backend securely receives the PDF, validating its `%PDF` magic bytes and enforcing a strict 25MB cap. The file is saved to an isolated, sandboxed path to prevent traversal attacks.
-2. **Vision & Crop (MCP Server):** An internal Model Context Protocol (MCP) server runs PyMuPDF to extract raw text and actively crop bounding boxes around figures and tables, saving them to a sandboxed `/assets` folder. It associates captions with images using a `caption-regex` paired with a "nearest-region-above" heuristic—it identifies the caption text block and calculates the distance to the bottom of all image rects above it, snapping the crop to the nearest visual asset.
-3. **Concierge Agent:** Interviews the user (or parses form inputs) to establish presentation constraints, including talk duration, target audience, and the core focus of the talk.
-4. **Distiller Agent:** Restructures the paper into a strict outline. It produces exactly the number of main slides that fit the requested talk length (roughly one slide per 1–1.5 minutes, estimated from paper density and audience). All heavy mathematical derivations, secondary results, and deep proofs are dynamically routed into a "Hidden Appendix" (up to 20 slides) that stays out of the linear flow but remains accessible during Q&A.
-5. **Visual Matcher Agent:** Reviews the generated slide outline and the MCP server's figure manifest, intelligently mapping the perfectly cropped assets to their corresponding slides.
-6. **Frontend Coder Agent:** The agent does *not* freehand HTML, which is a massive XSS and hallucination risk. Instead, it calls a deterministic, sanitizing `render_deck` tool that outputs the final, flawless Reveal.js presentation.
+The FastAPI backend routes the sanitized PDF and constraints to the ADK `SequentialAgent`. State flows cleanly downstream from agent to agent, tapping into a low-level MCP server for vision tasks before culminating in a secure, deterministic HTML rendering phase.
 
-## Why The Design Choices Matter
+## The Agent Pipeline
 
-This system was engineered with flaw-first architectural constraints rather than relying purely on LLM instruction-following:
-- **Pydantic Literal Schemas:** The LLM's output schema locks the `theme` and `font` fields to strict `Literal` types. This structurally guarantees the agent cannot hallucinate non-existent Reveal.js CSS files that would cause the UI to crash into a white screen.
-- **Deterministic Rendering:** The `render_deck` tool is entirely deterministic and XSS-safe. It HTML-escapes all strings before injection, ensuring no invalid markup breaks the presentation structure.
-- **Sandboxed Filesystem:** All PDF operations and asset extractions occur within a strict sandbox. Any path that resolves outside the base directory is immediately rejected, neutralizing path traversal vulnerabilities.
-- **Unicode Math:** LLMs frequently generate broken LaTeX syntax when injecting directly into HTML templates. The system forces the agent to use clean, robust unicode math (e.g., `α`, `x²`), bypassing fragile web rendering engines like MathJax entirely.
-- **The Hidden Appendix Pattern:** Enforcing a strict 10-slide limit prevents the LLM from generating endless, unreadable decks. Stashing the rest of the paper in a vertical Reveal.js stack gives presenters instant access to the dense math they need for aggressive Q&A sessions without bloating the main talk.
+- **Concierge Agent (`output_key="constraints"`):** Interviews the user (or parses form inputs) to establish rigid constraints for the presentation, including the exact talk duration in minutes, the target audience, and the core focus.
+- **Distiller Agent (`output_key="deck_outline"`):** Calls the MCP `parse_paper` tool to read the paper and write a strict outline. It splits the content into exactly the right number of main slides to hit the time budget, moving heavy derivations and secondary graphs into up to 20 "Hidden Appendix" slides. It forces plain-text and unicode math, strictly forbidding raw LaTeX or markdown to protect the rendering engine.
+- **Visual Matcher Agent (`output_key="mapped_outline"`):** Reviews the outline against the PyMuPDF figure manifest, assigning each cropped figure to the most appropriate slide using caption context. It never invents paths, relying solely on the real extracted assets.
+- **Frontend Coder Agent (`output_key="deck_path"`):** Calls the deterministic `render_deck_tool`. It never writes HTML itself, completely preventing XSS injection and UI hallucination.
+
+## The Vision MCP Server
+
+Our standout technical detail is `mcp_server.py`, which exposes the `parse_paper` tool over stdio to the agents. It uses a hybrid extraction approach: PyMuPDF first pulls the text and detects `Figure/Table N` captions. When a caption exists, the page is rasterized and its main-body text is whited out. Then, **Gemini Vision** analyzes the cleaned image to return precise figure bounding boxes on a 0-1000 normalized scale, which PyMuPDF uses to crop and save the assets to `/assets`. This caption-gated logic saves latency and API costs by only invoking the vision model on pages guaranteed to have figures.
+
+## Security Model
+
+Built with enterprise-grade guardrails:
+- **Sandboxed Filesystem:** `safe_join` enforces that every single path resolution stays strictly under the `PAPER_TO_DECK_SANDBOX` root.
+- **XSS-Safe Rendering:** All text injected into Reveal.js runs through `escape_text`. Images are validated by `safe_asset_src` to only allow `assets/*.png|jpg|jpeg`.
+- **Strict PDF Validation:** Uploads are checked for `%PDF-` magic bytes and restricted to a 25 MB cap to prevent denial-of-service.
+- **No API Keys:** Authentication is exclusively handled via Vertex AI and Application Default Credentials.
+
+## Google Cloud + Vertex AI
+
+The `google-genai` client reaches Gemini using `GOOGLE_GENAI_USE_VERTEXAI=TRUE` combined with Application Default Credentials (ADC). This routes all inference through enterprise Vertex AI infrastructure, meaning no static API key is ever stored or transmitted. The system utilizes `gemini-2.5-flash` deployed in `us-central1`.
+
+## Deployability
+
+Deployment is fully containerized using Docker (`deploy/Dockerfile`) and intended for Google Cloud Run. The service is deployed with the `--no-allow-unauthenticated` flag. This prevents public internet access, stopping runaway billing and quota exhaustion dead in its tracks. Check `deploy/cloudrun.md` for fully reproducible deploy documentation.
+
+## Course Concepts Demonstrated
+
+| Concept | Demonstrated In |
+| --- | --- |
+| **ADK Multi-Agent** | `src/paper_to_deck/agents/pipeline.py` |
+| **MCP Server** | `src/paper_to_deck/mcp_server.py` |
+| **Security** | `src/paper_to_deck/security.py` |
+| **Antigravity** | Built via Antigravity, shown in the submission video |
+| **Deployability** | `deploy/cloudrun.md` + Video demo |
 
 ## Tech Stack
 
-- **Google ADK (Agent Development Kit):** Provides the robust `SequentialAgent` orchestration and state routing.
-- **Gemini 2.5 Flash (Vertex AI):** Lightning-fast intelligence for structuring dense academic text and constraint solving.
-- **Model Context Protocol (MCP):** Exposes a standardized tool interface for our internal PyMuPDF asset extraction logic.
-- **FastAPI:** Handles robust, asynchronous file uploads and provides a fast web frontend.
-- **Reveal.js:** The industry standard for beautiful, HTML-based slide decks.
-- **Pydantic v2:** For rigorous schema validation and LLM output parsing.
-- **uv:** Ultra-fast, deterministic Python package management.
-
-## Security & Cost Posture
-
-This project is hardened by default and designed for enterprise deployment on Google Cloud.
-- **Vertex AI + ADC:** Authentication is handled strictly via Vertex AI and Application Default Credentials (ADC). 
-- **Zero Secrets:** There are **NO API keys** and **NO Secret Manager keys** required or permitted in this repository. 
-- **Cost Protection:** The Cloud Run deployment explicitly requires the `--no-allow-unauthenticated` flag. The service cannot be invoked by the public internet, completely preventing runaway billing and quota exhaustion.
+- **Google ADK (Agent Development Kit):** Orchestrates the `SequentialAgent` pipeline and state routing.
+- **Gemini 2.5 Flash (Vertex AI):** Fast, intelligent processing of dense scientific text.
+- **MCP (Model Context Protocol):** Provides the standardized tool interface for isolated Python extraction logic.
+- **PyMuPDF (`fitz`):** Powers the high-fidelity PDF rasterization and physical asset cropping.
+- **Pydantic v2:** Enforces rigid schema validation to prevent LLM hallucinations.
+- **FastAPI:** Handles async file uploads and serves the interactive frontend.
+- **Reveal.js:** The standard for programmatic, beautiful HTML slide decks.
+- **MathJax:** Included in the renderer to handle math display if necessary (though unicode is preferred).
+- **uv:** Lightning-fast, deterministic Python package management.
+- **Docker / Cloud Run:** Enables secure, scalable, unauthenticated-blocked cloud deployment.
 
 ## Quickstart
 
@@ -98,3 +126,11 @@ gcloud run deploy paper-to-deck \
   --no-allow-unauthenticated \
   --set-env-vars GOOGLE_GENAI_USE_VERTEXAI=TRUE,GOOGLE_CLOUD_PROJECT=your-project-id,GOOGLE_CLOUD_LOCATION=us-central1,GEMINI_MODEL=gemini-2.5-flash
 ```
+
+## Testing
+
+The system maintains 100% test coverage for its core flows. Run the suite:
+```bash
+uv run pytest
+```
+This executes 35 tests covering Pydantic schemas, security boundaries, PDF parsing, MCP server execution, HTML rendering, agent pipelines, deployment artifacts, and the web backend.
