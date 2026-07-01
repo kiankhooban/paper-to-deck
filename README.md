@@ -10,7 +10,7 @@
 <div style="display: flex; justify-content: space-between; gap: 10px;">
   <img src="docs/screenshot-upload.png" alt="Upload Interface" width="32%"/>
   <img src="docs/screenshot-deck.png" alt="Main Deck" width="32%"/>
-  <img src="docs/screenshot-appendix.png" alt="Hidden Appendix" width="32%"/>
+  <img src="docs/screenshot-cloudrun.png" alt="Deployed on Google Cloud Run" width="32%"/>
 </div>
 
 ## The Problem
