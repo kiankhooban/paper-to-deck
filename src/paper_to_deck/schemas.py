@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+"""Pydantic models and strict Literal schemas for the system.
+
+Forces the LLM to output precise structures and blocks UI hallucination.
+"""
+
 from typing import Literal
 
 from pydantic import BaseModel

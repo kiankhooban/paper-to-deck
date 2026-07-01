@@ -1,5 +1,11 @@
 from __future__ import annotations
 
+"""Model Context Protocol (MCP) server for Vision and Cropping.
+
+Exposes a standard MCP stdio tool that the ADK pipeline calls to parse 
+and extract figures from PDFs.
+"""
+
 import os
 from typing import Any
 

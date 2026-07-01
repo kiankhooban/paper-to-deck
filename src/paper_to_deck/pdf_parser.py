@@ -1,3 +1,8 @@
+"""PDF processing and vision extraction logic.
+
+Uses PyMuPDF to extract text and captions, and Gemini Vision to map out
+figure bounding boxes.
+"""
 import os
 import re
 import json
@@ -27,6 +32,8 @@ def _get_gemini_client():
 
 def extract_figures_from_page(pix_bytes: bytes) -> list[dict]:
     client = _get_gemini_client()
+    # Gemini vision returns bounding boxes on a 0-1000 normalized scale, which provides 
+    # robust layout analysis and precise cropping far beyond what simple regex can achieve.
     prompt = """
     You are an expert layout analysis model. Find all scientific figures, diagrams, and tables in this image.
     Return a JSON array of objects. Each object should have:
@@ -86,8 +93,11 @@ def parse_paper(pdf_path: str, sandbox_root: str) -> ParsedPaper:
             title = max(text_blocks[:5], key=lambda tb: tb[0].height)[1]
 
         # Only query Gemini if PyMuPDF detected a caption, to save time/cost.
+        # This caption-gated call avoids sending text-only pages to the vision model.
         if has_caption:
-            # Create a cleaned pixmap for Gemini to avoid sloppy bounding boxes
+            # Create a cleaned pixmap for Gemini to avoid sloppy bounding boxes.
+            # The body-text white-out trick blanks main-body text before sending the page
+            # to Gemini so the model returns tighter figure boxes.
             pix_clean = page.get_pixmap(dpi=150)
             font_sizes = []
             for b in blocks:
@@ -123,7 +133,7 @@ def parse_paper(pdf_path: str, sandbox_root: str) -> ParsedPaper:
                 fig_counter += 1
                 fig_id = f"fig_{fig_counter}"
                 
-                # Convert 0-1000 scale to page coordinates
+                # Convert 0-1000 scale to absolute page coordinates
                 ymin, xmin, ymax, xmax = bbox
                 x0 = w * xmin / 1000.0
                 y0 = h * ymin / 1000.0
@@ -131,7 +141,7 @@ def parse_paper(pdf_path: str, sandbox_root: str) -> ParsedPaper:
                 y1 = h * ymax / 1000.0
                 
                 clip = fitz.Rect(x0, y0, x1, y1)
-                # Expand clip slightly to ensure no edges are lost
+                # Expand clip slightly (5pt) to ensure no edges or borders are lost in the crop
                 clip = clip + (-5, -5, 5, 5)
                 
                 # Crop and save

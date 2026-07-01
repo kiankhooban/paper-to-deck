@@ -1,5 +1,17 @@
 from __future__ import annotations
 
+"""Defines the four-agent ADK pipeline (the heart of the system).
+
+A SequentialAgent chains four LlmAgents that pass state via output_key:
+  concierge  -> constraints   (locks talk length, audience, focus)
+  distiller  -> deck_outline  (writes the outline; calls the MCP parse_paper tool)
+  visual_matcher -> mapped_outline (assigns each cropped figure to a slide)
+  frontend_coder -> deck_path (calls the deterministic render_deck tool)
+
+The frontend agent never writes HTML itself: it calls a sanitizing tool, so the
+LLM cannot inject XSS or invalid markup. Design choice from the flaw-first review.
+"""
+
 import os
 
 from google.adk.agents import LlmAgent, SequentialAgent
@@ -17,6 +29,8 @@ import sys
 from pathlib import Path
 
 def _vision_crop_toolset() -> McpToolset:
+    # Launches the MCP server as a stdio subprocess via runpy to isolate the extraction process.
+    # The tool_filter restricts access solely to 'parse_paper', preventing unintended tool exposure.
     src_path = str(Path(__file__).parent.parent.parent)
     return McpToolset(
         connection_params=StdioConnectionParams(
@@ -44,6 +58,7 @@ def build_root_agent() -> SequentialAgent:
             "and whether they want AI-generated flowchart visuals. Output a compact JSON "
             "object with keys: minutes, audience, focus, want_flowcharts."
         ),
+        # output_key="constraints" feeds into the Distiller agent to constrain its outline generation
         output_key="constraints",
     )
 
@@ -65,6 +80,7 @@ def build_root_agent() -> SequentialAgent:
             "- The `section` field MUST be exactly \"main\" or \"appendix\"."
         ),
         tools=[_vision_crop_toolset()],
+        # output_key="deck_outline" feeds into the Visual Matcher agent to populate image paths
         output_key="deck_outline",
     )
 
@@ -78,6 +94,7 @@ def build_root_agent() -> SequentialAgent:
             "or null if no figure fits. Do not invent paths: only use image_path values from the "
             "manifest. The 'section' field MUST remain exactly \"main\" or \"appendix\". Output the updated DeckOutline JSON."
         ),
+        # output_key="mapped_outline" feeds the final structure into the Frontend Coder
         output_key="mapped_outline",
     )
 
@@ -90,6 +107,7 @@ def build_root_agent() -> SequentialAgent:
             "the user."
         ),
         tools=[FunctionTool(render_deck_tool)],
+        # output_key="deck_path" is returned as the final output of the sequential pipeline
         output_key="deck_path",
     )
 

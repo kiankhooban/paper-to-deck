@@ -1,5 +1,11 @@
 from __future__ import annotations
 
+"""Deterministic Reveal.js HTML renderer.
+
+Generates the presentation deck using strict templates rather than
+allowing the LLM to freehand HTML.
+"""
+
 from pathlib import Path
 
 from .schemas import DeckOutline, Slide
@@ -21,12 +27,15 @@ def _footer(deck_title: str) -> str:
 
 
 def _figure(slide: Slide) -> str:
+    # Enforces XSS-safety: all paths go through safe_asset_src, text goes through escape_text
     src = safe_asset_src(slide.image_id)
     cap = escape_text(slide.caption_text()) if hasattr(slide, "caption_text") else ""
     return f'<figure><img src="{src}"/><figcaption>{cap}</figcaption></figure>'
 
 
 def _content_slide(slide: Slide, deck_title: str, hidden: bool) -> str:
+    # Escapes all text to be XSS-safe.
+    # The appendix uses data-visibility="hidden" so it stays out of the linear flow but is reachable.
     attrs = ' data-visibility="hidden"' if hidden else ""
     head = f"<h2>{escape_text(slide.title)}</h2>"
     bullets = ""

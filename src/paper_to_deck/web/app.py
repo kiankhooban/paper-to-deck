@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+"""FastAPI backend application for the web interface.
+
+Handles file uploads, AI estimation, and triggers the ADK pipeline.
+"""
+
 import os
 import uuid
 from pathlib import Path
@@ -29,8 +34,10 @@ def _sandbox() -> Path:
 
 
 def validate_pdf(data: bytes) -> None:
+    # Validates file size against a 25 MB cap to prevent denial-of-service and memory exhaustion.
     if not data or len(data) > MAX_PDF_BYTES:
         raise HTTPException(status_code=400, detail="PDF is empty or larger than 25 MB.")
+    # Strict %PDF- magic-byte check ensures the file is truly a PDF, not just renamed.
     if not data.startswith(b"%PDF-"):
         raise HTTPException(status_code=400, detail="That file is not a PDF.")
 
@@ -143,7 +150,8 @@ def deck() -> str:
 
 @app.get("/assets/{name}")
 def deck_asset(name: str) -> FileResponse:
-    path = safe_join(_sandbox() / "assets", name)  # safe_join blocks traversal
+    # /assets/{name} is protected by safe_join, strictly preventing path traversal attacks.
+    path = safe_join(_sandbox() / "assets", name)
     if not path.exists():
         raise HTTPException(status_code=404, detail="asset not found")
     return FileResponse(path)

@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+"""Bridges the FastAPI web layer with the ADK agent pipeline.
+
+Starts the ADK execution session for an uploaded paper.
+"""
+
 import os
 
 from google.adk.runners import Runner
